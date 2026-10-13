@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sendly check</title>
+<style>
+  html, body { margin:0; background:transparent; }
+  body { display:flex; justify-content:center; align-items:center; min-height:100vh; }
+</style>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=sendlyLoad&render=explicit" async defer></script>
+</head>
+<body>
+<!-- Sendly's guest sign-up check (Cloudflare Turnstile). The app loads this page in a hidden web view with
+     ?sitekey=…&theme=dark and gets the token back through the "captcha" message handler. -->
+<div id="box"></div>
+<script>
+  function post(msg) {
+    try { window.webkit.messageHandlers.captcha.postMessage(msg); } catch (e) {}
+  }
+  function sendlyLoad() {
+    var p = new URLSearchParams(location.search);
+    var key = p.get("sitekey");
+    if (!key) { post({ type: "error", code: "no-sitekey" }); return; }
+    turnstile.render("#box", {
+      sitekey: key,
+      theme: p.get("theme") || "auto",
+      appearance: "interaction-only",
+      callback: function (token) { post({ type: "token", token: token }); },
+      "before-interactive-callback": function () { post({ type: "interactive" }); },
+      "error-callback": function (code) { post({ type: "error", code: String(code) }); return true; },
+      "expired-callback": function () { post({ type: "expired" }); }
+    });
+  }
+</script>
+</body>
+</html>
